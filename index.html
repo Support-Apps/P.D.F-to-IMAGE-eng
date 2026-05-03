@@ -287,7 +287,7 @@
         
         <div class="upload-section">
             <div class="file-input-wrapper">
-                <input type="file" id="pdfFile" accept=".pdf" multiple>
+                <input type="file" id="pdfFile" multiple>
                 <label for="pdfFile" class="file-input-label">📁 Select PDF Files</label>
             </div>
             <div class="file-name" id="fileName"></div>
@@ -334,6 +334,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -355,10 +356,20 @@
         });
 
         pdfFile.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                const files = Array.from(e.target.files).map(f => f.name).join(', ');
+            // Filter only PDF files
+            const pdfFiles = Array.from(e.target.files).filter(f => 
+                f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+            );
+            
+            if (pdfFiles.length > 0) {
+                const files = pdfFiles.map(f => f.name).join(', ');
                 fileName.textContent = `✓ ${files}`;
                 convertBtn.disabled = false;
+                
+                // Update the FileList-like object
+                const dataTransfer = new DataTransfer();
+                pdfFiles.forEach(file => dataTransfer.items.add(file));
+                pdfFile.files = dataTransfer.files;
             } else {
                 fileName.textContent = '';
                 convertBtn.disabled = true;
@@ -376,6 +387,7 @@
                 const files = Array.from(pdfFile.files);
                 let totalPages = 0;
                 let processedPages = 0;
+                const zip = new JSZip();
 
                 // Count total pages
                 for (const file of files) {
@@ -384,10 +396,13 @@
                     totalPages += pdf.numPages;
                 }
 
-                // Convert each page to image
+                // Convert each page to image and add to ZIP
                 for (const file of files) {
                     const arrayBuffer = await file.arrayBuffer();
                     const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                    const baseName = file.name.replace('.pdf', '');
+                    const folderName = baseName; // Folder for each PDF
+                    const folder = zip.folder(folderName);
 
                     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                         const page = await pdf.getPage(pageNum);
@@ -401,31 +416,36 @@
                         await page.render({canvasContext: ctx, viewport}).promise;
 
                         // Create filename
-                        const baseName = file.name.replace('.pdf', '');
                         const imageName = `${baseName}_page_${pageNum}.${imageFormat.value}`;
 
-                        // Download image
-                        canvas.toBlob((blob) => {
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = imageName;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                        }, `image/${imageFormat.value}`, imageFormat.value === 'jpg' ? parseInt(quality.value) / 100 : undefined);
+                        // Convert to blob and add to ZIP
+                        const blob = await new Promise(resolve => {
+                            canvas.toBlob(resolve, `image/${imageFormat.value}`, imageFormat.value === 'jpg' ? parseInt(quality.value) / 100 : undefined);
+                        });
+                        folder.file(imageName, blob);
 
                         processedPages++;
                         const progress = (processedPages / totalPages) * 100;
                         progressFill.style.width = progress + '%';
                         progressText.textContent = `Pages converted: ${processedPages}/${totalPages}`;
 
-                        // Small delay between downloads
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                        // Small delay between conversions
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
                 }
 
+                // Create and download ZIP
+                progressText.textContent = 'Creating ZIP file...';
+                const zipBlob = await zip.generateAsync({type: 'blob'});
+                const zipUrl = URL.createObjectURL(zipBlob);
+                const a = document.createElement('a');
+                a.href = zipUrl;
+                a.download = 'PDF_Images.zip';
+                a.click();
+                URL.revokeObjectURL(zipUrl);
+
                 // Show success message
-                showResult('success', 'Conversion completed successfully!', `${processedPages} pages converted to images.<br><br>✓ Files saved to Downloads folder.<br>🎯 Check your browser's Downloads folder.`);
+                showResult('success', 'Conversion completed successfully!', `${processedPages} pages converted to images.<br><br>✓ All images saved in ZIP file.<br>🎯 <strong>PDF_Images.zip</strong> has been downloaded.<br>📁 Extract the file to see the images.`);
                 
             } catch (error) {
                 showResult('error', 'Conversion Error', error.message);

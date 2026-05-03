@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Image - Convert PDFs to Images</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Montserrat', sans-serif; }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 0;
+            box-shadow: 0 4px 20px rgba(255, 200, 221, 0.2);
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255, 200, 221, 0.3);
+        }
+        
+        h1 {
+            color: #FFC8DD;
+            font-size: 28px;
+            margin: 0 0 10px 0;
+            letter-spacing: 0.5px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+        
+        .upload-section {
+            margin-bottom: 25px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+        
+        .file-input-label {
+            display: block;
+            padding: 16px;
+            background: #FFC8DD;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+            border: 1px solid #FFC8DD;
+        }
+        
+        .file-input-label:hover {
+            background: #FFB3D9;
+            border-color: #FFB3D9;
+        }
+        
+        .file-name {
+            margin-top: 10px;
+            color: #666;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        
+        .options {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 0;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .option-group {
+            margin-bottom: 15px;
+        }
+        
+        .option-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            font-size: 12px;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 0;
+            font-size: 12px;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #FFC8DD;
+            box-shadow: 0 0 0 2px rgba(255, 200, 221, 0.1);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #FFC8DD;
+        }
+        
+        .checkbox-label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 400;
+            font-size: 12px;
+        }
+        
+        .progress-section {
+            display: none;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #FFC8DD;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            color: #666;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 0;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .convert-btn {
+            background: #FFC8DD;
+            color: white;
+            border: 1px solid #FFC8DD;
+        }
+        
+        .convert-btn:hover:not(:disabled) {
+            background: #FFB3D9;
+            border-color: #FFB3D9;
+        }
+        
+        .convert-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .reset-btn {
+            background: white;
+            color: #FFC8DD;
+            border: 1px solid #FFC8DD;
+        }
+        
+        .reset-btn:hover {
+            background: #FFC8DD;
+            color: white;
+        }
+        
+        .result {
+            display: none;
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 0;
+            border-left: 3px solid #FFC8DD;
+            margin-top: 20px;
+        }
+        
+        .result.success {
+            background: #f0fff4;
+            border-left-color: #4caf50;
+        }
+        
+        .result.error {
+            background: #fff3f3;
+            border-left-color: #f44336;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .result-text {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .result a {
+            color: #FFC8DD;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .result a:hover {
+            text-decoration: underline;
+        }
+        
+        .info-box {
+            background: #fffbf0;
+            border: 1px solid #ffe0cc;
+            padding: 12px;
+            border-radius: 0;
+            margin-bottom: 20px;
+            font-size: 11px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .info-box strong {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 PDF to Image</h1>
+        <div class="subtitle">Convert PDF files to PNG/JPG images</div>
+        
+        <div class="info-box">
+            <strong>Destination folder:</strong><br>
+            Downloads folder (Browser's default)
+        </div>
+        
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="pdfFile" accept=".pdf" multiple>
+                <label for="pdfFile" class="file-input-label">📁 Select PDF Files</label>
+            </div>
+            <div class="file-name" id="fileName"></div>
+        </div>
+        
+        <div class="options">
+            <div class="option-group">
+                <label for="imageFormat">Image Format:</label>
+                <select id="imageFormat">
+                    <option value="png">PNG (High Quality)</option>
+                    <option value="jpg">JPG (Smaller File)</option>
+                </select>
+            </div>
+            
+            <div class="option-group">
+                <label for="quality">Quality (JPG Only):</label>
+                <input type="range" id="quality" min="50" max="100" value="90" style="cursor:pointer;">
+                <div style="font-size:11px; color:#666; text-align:center; margin-top:5px;">
+                    Quality: <span id="qualityValue">90</span>%
+                </div>
+            </div>
+            
+            <div class="option-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="scale" checked>
+                    <label for="scale" class="checkbox-label">Scale images (higher resolution)</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="progress-section" id="progressSection">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Processing...</div>
+        </div>
+        
+        <div class="button-group">
+            <button class="convert-btn" id="convertBtn" disabled>🔄 Convert</button>
+            <button class="reset-btn" id="resetBtn">↺ Reset</button>
+        </div>
+        
+        <div class="result" id="result"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const pdfFile = document.getElementById('pdfFile');
+        const fileName = document.getElementById('fileName');
+        const convertBtn = document.getElementById('convertBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressSection = document.getElementById('progressSection');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const result = document.getElementById('result');
+        const imageFormat = document.getElementById('imageFormat');
+        const quality = document.getElementById('quality');
+        const qualityValue = document.getElementById('qualityValue');
+        const scale = document.getElementById('scale');
+
+        quality.addEventListener('input', () => {
+            qualityValue.textContent = quality.value;
+        });
+
+        pdfFile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const files = Array.from(e.target.files).map(f => f.name).join(', ');
+                fileName.textContent = `✓ ${files}`;
+                convertBtn.disabled = false;
+            } else {
+                fileName.textContent = '';
+                convertBtn.disabled = true;
+            }
+        });
+
+        convertBtn.addEventListener('click', async () => {
+            if (!pdfFile.files.length) return;
+
+            convertBtn.disabled = true;
+            progressSection.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const files = Array.from(pdfFile.files);
+                let totalPages = 0;
+                let processedPages = 0;
+
+                // Count total pages
+                for (const file of files) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                    totalPages += pdf.numPages;
+                }
+
+                // Convert each page to image
+                for (const file of files) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+
+                    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                        const page = await pdf.getPage(pageNum);
+                        const viewport = page.getViewport({scale: scale.checked ? 2 : 1.5});
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+
+                        await page.render({canvasContext: ctx, viewport}).promise;
+
+                        // Create filename
+                        const baseName = file.name.replace('.pdf', '');
+                        const imageName = `${baseName}_page_${pageNum}.${imageFormat.value}`;
+
+                        // Download image
+                        canvas.toBlob((blob) => {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = imageName;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }, `image/${imageFormat.value}`, imageFormat.value === 'jpg' ? parseInt(quality.value) / 100 : undefined);
+
+                        processedPages++;
+                        const progress = (processedPages / totalPages) * 100;
+                        progressFill.style.width = progress + '%';
+                        progressText.textContent = `Pages converted: ${processedPages}/${totalPages}`;
+
+                        // Small delay between downloads
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+
+                // Show success message
+                showResult('success', 'Conversion completed successfully!', `${processedPages} pages converted to images.<br><br>✓ Files saved to Downloads folder.<br>🎯 Check your browser's Downloads folder.`);
+                
+            } catch (error) {
+                showResult('error', 'Conversion Error', error.message);
+            } finally {
+                convertBtn.disabled = false;
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            pdfFile.value = '';
+            fileName.textContent = '';
+            result.style.display = 'none';
+            progressSection.style.display = 'none';
+            convertBtn.disabled = true;
+        });
+
+        function showResult(type, title, text) {
+            result.className = `result ${type}`;
+            result.innerHTML = `<div class="result-title">${title}</div><div class="result-text">${text}</div>`;
+            result.style.display = 'block';
+            progressSection.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
